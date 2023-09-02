@@ -25,25 +25,15 @@ const GameFrame = (props) => {
     const bucketSize = 100
     const bucketYPos = groundYPos - bucketSize / 2
     const fallingObjectSize = 50
-
+    const dt = 0.0001
     const [bucketXPos, setBucketXPos] = useState(window.innerWidth/2 - bucketSize / 2)
 
-    const [ hasSetInterval, setHasSetInterval ] = useState(false) 
     const [fallingObjectList, setFallingObjectList] = useState([])
     const [nowTime, setNowTime] = useState(0)
     const [speed, setSpeed] = useState(4)
     const [score, setScore] = useState(0)
     const [ result, setResult ] = useState("pending") 
-    const [ username, setUsername ] = useState("") 
-
-    const clearfallingObjectList = ()=>{
-        
-
-        setFallingObjectList([])
-        setNowTime( nowTime => nowTime+0.01 )
-        //console.log(`FALL ${pastTime}`)
-    }
-    
+    const [ username, setUsername ] = useState("")     
     function updatefallingObjectList(){
         const newfallingObjectList = ( nowObjectList ) =>{
             for (let index = nowObjectList.length - 1; index >= 0; index--) {
@@ -55,9 +45,8 @@ const GameFrame = (props) => {
             return  nowObjectList
             
         }
-        
+        setNowTime( nowTime => nowTime+dt )
         setFallingObjectList(oldArray => newfallingObjectList( oldArray ))
-        setNowTime( nowTime => nowTime+0.01 )
         //console.log(`FALL ${nowTime}`)
     }
 
@@ -79,29 +68,28 @@ const GameFrame = (props) => {
                     ,score:  -1
                 }   
             // retObject.push( newObject )
-            console.log(`ADD ${nowTime}`)
+            // console.log(`ADD ${nowTime}`)
             return  [...nowObjectList, newObjectProp ]
             
         }
-
         setFallingObjectList(oldArray => newfallingObjectList( oldArray ))
-        setNowTime( nowTime => nowTime+0.01 )
         //console.log(`FALL ${pastTime/1000}`)
     }
 
     
 
     useEffect(()=>{
+        var timeID1 = null, timeID2 = null;
         if( result === "pending" )
         {
-            var timeID1 = setInterval( addfallingObjectList, 200 )
-            var timeID2 = setInterval( updatefallingObjectList, 10 )
+            timeID1 = setInterval( addfallingObjectList, 200 )
+            timeID2 = setInterval( updatefallingObjectList, dt*1000 )
         }
         return ()=>{
-            clearInterval(timeID1);
-            clearInterval(timeID2)
+                clearInterval(timeID1);
+                clearInterval(timeID2)   
         }
-    }, [ result])
+    }, [ result ])
     
     useEffect(()=>{
         const newfallingObjectList = ( nowObjectList ) =>{
@@ -118,11 +106,10 @@ const GameFrame = (props) => {
                     }
                     else setScore( score => score+nowscore )
                     nowObjectList.splice(index, 1)
-                    
                 }
             }
             // retObject.push( newObject )
-            //console.log(`ADD ${nowTime}`)
+            // console.log(`ADD ${nowTime}`)
             return  nowObjectList           
         }
         
@@ -132,6 +119,12 @@ const GameFrame = (props) => {
 
     const handleMouseMove = (event) => {
         setBucketXPos(event.clientX - bucketSize / 2);
+    }
+
+    const resetGameFrame = (event) => {
+        setResult("pending")
+        setFallingObjectList([])
+        setScore(0)
     }
 
     const scoreStyle={
@@ -186,7 +179,7 @@ const GameFrame = (props) => {
                 <rect x="0" y="100" style={endrectStyle} width={window.innerWidth} height={100}/>
                 <text x="50" y="180" style={endscoreStyle}>{`Game over, your score : ${score}`}</text>
                 <foreignObject width={window.innerWidth} height={100} x="0" y="200">
-                    <Input.Search placeholder="Your Name" value={username} onChange={(e) => setUsername(e.target.value)} style={endInputStyle} ></Input.Search>
+                    <Button onClick={(e) => resetGameFrame()} >Reset</Button>
                 </foreignObject>
                     </>)}
             </svg>
