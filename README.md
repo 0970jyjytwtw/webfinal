@@ -1,5 +1,5 @@
 # Catch Apple
-Catch the apple and avoid the black melon.
+Catch apples and avoid black melons. 
 ![圖片](https://github.com/0970jyjytwtw/webfinal/assets/31963831/8ff3841c-7d3c-4581-9b1c-78861c760e08)
 ![圖片](https://github.com/0970jyjytwtw/webfinal/assets/31963831/d705e4b6-38ae-4624-897f-91bdf6dc95f0)
 
