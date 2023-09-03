@@ -7,7 +7,10 @@ import Bucket from "./Bucket";
 import AppleImage from "../images/apple.png";
 import BlackWatermelonImage from "../images/blackwatermelon.png";
 import { Button, Input } from 'antd'
-  
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 function getRandomArbitrary(min, max) {
     return Math.random() * (max - min) + min;
 }
@@ -25,33 +28,71 @@ const GameFrame = (props) => {
     const bucketSize = 100
     const bucketYPos = groundYPos - bucketSize / 2
     const fallingObjectSize = 50
-    const dt = 0.0001
+    const dt = 0.01
     const [bucketXPos, setBucketXPos] = useState(window.innerWidth/2 - bucketSize / 2)
 
     const [fallingObjectList, setFallingObjectList] = useState([])
     const [nowTime, setNowTime] = useState(0)
     const [speed, setSpeed] = useState(4)
     const [score, setScore] = useState(0)
-    const [ result, setResult ] = useState("pending") 
-    const [ username, setUsername ] = useState("")     
-    function updatefallingObjectList(){
+    const [result, setResult] = useState("pending") 
+    const [lastUpdateObjTime, setlastUpdateObjTime] = useState(-1)   
+    useEffect(()=>{
+        var timeID1 = null, timeID2 = null;
+        if( result === "pending" )
+        {
+            timeID1 = setInterval( ()=>{
+                setNowTime( (nowTime) => {return nowTime+dt;} )
+            }, dt*1000 )
+        }
+        return ()=>{
+                clearInterval(timeID1);
+        }
+    }, [ result ])
+    
+    useEffect(()=>{
         const newfallingObjectList = ( nowObjectList ) =>{
             for (let index = nowObjectList.length - 1; index >= 0; index--) {
-                nowObjectList[index].ypos += speed;   
-                if( nowObjectList[index].ypos > window.innerHeight ) nowObjectList.splice(index, 1)
+                nowObjectList[index].ypos += speed;
+                if( nowObjectList[index].xpos < bucketXPos + bucketSize
+                    && nowObjectList[index].xpos > bucketXPos - fallingObjectSize
+                    && nowObjectList[index].ypos < bucketYPos + bucketSize/5
+                    && nowObjectList[index].ypos > bucketYPos - fallingObjectSize )
+                {
+                    var nowscore = nowObjectList[index].score
+                    if( nowObjectList[index].score < 0 )
+                    {
+                        setResult("lose")
+                    }
+                    else setScore( score => score+nowscore )
+                    nowObjectList.splice(index, 1)
+                }
+            }
+            if(lastUpdateObjTime < nowTime){
+                var newObjectProp;
+                if( getRandomInt(2) == 0 )
+                    newObjectProp = { 
+                        xlinkHref: AppleImage
+                        ,xpos: getRandomArbitrary(0, window.innerWidth-100)
+                        ,ypos: -10
+                        ,score:  1
+                    }
+                else
+                    newObjectProp = { 
+                        xlinkHref: BlackWatermelonImage
+                        ,xpos: getRandomArbitrary(0, window.innerWidth-100)
+                        ,ypos: -10
+                        ,score:  -1
+                    }
+                nowObjectList = [...nowObjectList, newObjectProp]
+                setlastUpdateObjTime(nowTime + 0.4/speed)
             }
             // retObject.push( newObject )
-            //console.log(`ADD ${nowTime}`)
-            return  nowObjectList
-            
+            // console.log(`ADD ${nowTime}`)
+            return  nowObjectList           
         }
-        setNowTime( nowTime => nowTime+dt )
-        setFallingObjectList(oldArray => newfallingObjectList( oldArray ))
-        //console.log(`FALL ${nowTime}`)
-    }
 
-    function addfallingObjectList(){
-        const newfallingObjectList = ( nowObjectList ) =>{
+        const addFallingObjectList = ( nowObjectList ) =>{
             var newObjectProp;
             if( getRandomInt(2) == 0 )
                 newObjectProp = { 
@@ -67,55 +108,20 @@ const GameFrame = (props) => {
                     ,ypos: -10
                     ,score:  -1
                 }   
-            // retObject.push( newObject )
-            // console.log(`ADD ${nowTime}`)
             return  [...nowObjectList, newObjectProp ]
-            
         }
-        setFallingObjectList(oldArray => newfallingObjectList( oldArray ))
-        //console.log(`FALL ${pastTime/1000}`)
-    }
-
-    
-
-    useEffect(()=>{
-        var timeID1 = null, timeID2 = null;
-        if( result === "pending" )
-        {
-            timeID1 = setInterval( addfallingObjectList, 200 )
-            timeID2 = setInterval( updatefallingObjectList, dt*1000 )
-        }
-        return ()=>{
-                clearInterval(timeID1);
-                clearInterval(timeID2)   
-        }
-    }, [ result ])
-    
-    useEffect(()=>{
-        const newfallingObjectList = ( nowObjectList ) =>{
-            for (let index = nowObjectList.length - 1; index >= 0; index--) {
-                if( nowObjectList[index].xpos < bucketXPos + bucketSize
-                    && nowObjectList[index].xpos > bucketXPos - fallingObjectSize
-                    && nowObjectList[index].ypos < bucketYPos + bucketSize/5
-                    && nowObjectList[index].ypos > bucketYPos - fallingObjectSize )
-                {
-                    var nowscore = nowObjectList[index].score
-                    if( nowObjectList[index].score < 0 )
-                    {
-                        setResult("lose")
-                    }
-                    else setScore( score => score+nowscore )
-                    nowObjectList.splice(index, 1)
-                }
+        
+        setFallingObjectList(oldArray => newfallingObjectList( oldArray, nowTime ))
+        setSpeed((speed) => {
+            if(speed <= 12){
+                return speed + (1/(nowTime+1)*dt);
             }
-            // retObject.push( newObject )
-            // console.log(`ADD ${nowTime}`)
-            return  nowObjectList           
-        }
-        
-        setFallingObjectList(oldArray => newfallingObjectList( oldArray ))
+            else
+                return speed;
+        })
+        // console.log(`ADD ${speed} ${nowTime}`)
+
     },[nowTime] )
-        
 
     const handleMouseMove = (event) => {
         setBucketXPos(event.clientX - bucketSize / 2);
@@ -125,6 +131,7 @@ const GameFrame = (props) => {
         setResult("pending")
         setFallingObjectList([])
         setScore(0)
+        setNowTime(0)
     }
 
     const scoreStyle={
